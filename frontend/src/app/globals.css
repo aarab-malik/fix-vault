@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-ground text-ink font-sans antialiased;
+}
+
+@layer components {
+  .panel {
+    @apply bg-white border border-panel;
+  }
+
+  .btn-primary {
+    @apply bg-brand text-white px-4 py-2 text-sm border border-brand hover:bg-[#083d72] disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-ink px-4 py-2 text-sm border border-panel hover:bg-panel;
+  }
+
+  .input {
+    @apply w-full border border-panel bg-white px-3 py-2 text-sm focus:outline-none focus:border-brand;
+  }
+
+  .label {
+    @apply block text-sm font-medium mb-1;
+  }
+
+  .status-unresolved {
+    @apply text-warn;
+  }
+
+  .status-resolved {
+    @apply text-ok;
+  }
+
+  .status-failed {
+    @apply text-fail;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

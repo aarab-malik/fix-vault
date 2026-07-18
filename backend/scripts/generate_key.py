@@ -1,0 +1,10 @@
+"""Generate a Fernet key for CREDENTIALS_ENCRYPTION_KEY.
+
+Usage:
+    python scripts/generate_key.py
+"""
+
+from cryptography.fernet import Fernet
+
+if __name__ == "__main__":
+    print(Fernet.generate_key().decode())
