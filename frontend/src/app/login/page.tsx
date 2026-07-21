@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell mode="login">
-      <form onSubmit={submit} className="space-y-4 panel p-6">
+      <form onSubmit={submit} className="space-y-5">
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input
@@ -52,12 +52,12 @@ export default function LoginPage() {
           />
         </div>
         {error && (
-          <p className="font-mono text-sm text-fail border border-fail/30 bg-white px-3 py-2">
+          <p role="alert" className="alert-error font-mono">
             {error}
           </p>
         )}
         <button type="submit" className="btn-primary w-full" disabled={busy}>
-          {busy ? "Signing in…" : "Log in"}
+          {busy ? "Recovering session…" : "Open my archive →"}
         </button>
       </form>
     </AuthShell>

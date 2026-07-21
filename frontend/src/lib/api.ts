@@ -8,18 +8,41 @@ export class ApiError extends Error {
   }
 }
 
+function formatDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && "msg" in item) return String((item as { msg: unknown }).msg);
+        return JSON.stringify(item);
+      })
+      .join("; ");
+  }
+  if (detail && typeof detail === "object") return JSON.stringify(detail);
+  return fallback;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new ApiError(
+      "Cannot reach the API. If you are on localhost, wait for Render to wake up or run the backend locally.",
+      0
+    );
+  }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError(data.detail || res.statusText, res.status);
+    throw new ApiError(formatDetail(data.detail, res.statusText || "Request failed"), res.status);
   }
   return res.json();
 }

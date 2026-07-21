@@ -75,21 +75,44 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-xl font-medium mb-2">Settings</h1>
-        <p className="text-sm text-ink/70 mb-6">Connect your own API keys. FixVault uses them only for your account.</p>
-
-        <div className="flex gap-2 mb-8 text-sm font-mono">
-          {STEPS.map((s, i) => (
-            <span key={s} className={i <= step ? "text-brand" : "text-ink/40"}>
-              {i + 1}. {s}{i < STEPS.length - 1 ? " →" : ""}
-            </span>
-          ))}
+      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="flex items-center gap-4 mb-7">
+          <span className="file-tab">Secure connector bay</span>
+          <div className="diagnostic-ruler flex-1 opacity-60" />
+          <span className="hidden sm:block stamp text-ok">Encrypted</span>
         </div>
+        <header className="grid lg:grid-cols-[1fr_auto] gap-6 items-end mb-7">
+          <div>
+            <p className="system-label mb-2">Connection console</p>
+            <h1 className="page-title">Bring your own intelligence.</h1>
+            <p className="page-copy mt-2 max-w-xl">
+              Your Gemini and Pinecone credentials are encrypted for your account. FixVault never shares provider quota between users.
+            </p>
+          </div>
+          <div className="dossier bg-[#EAF4FF] px-5 py-4 font-mono text-[10px] leading-5 text-brand">
+            CREDENTIAL_MODE: BYOK<br />ENCRYPTION: ACTIVE
+          </div>
+        </header>
+
+        <ol className="grid grid-cols-2 sm:grid-cols-4 border border-brand/25 bg-[#F8FBFE] mb-7 shadow-[5px_5px_0_rgba(7,56,103,0.12)]">
+          {STEPS.map((s, i) => (
+            <li
+              key={s}
+              aria-current={i === step ? "step" : undefined}
+              className={`p-3 sm:p-4 border-r border-b sm:border-b-0 border-brand/15 last:border-r-0 ${
+                i === step ? "bg-brand text-white" : i < step ? "bg-[#E8F5EF] text-ok" : "text-ink/40"
+              }`}
+            >
+              <span className="font-mono text-[10px] block opacity-60">STEP_{String(i + 1).padStart(2, "0")}</span>
+              <span className="text-sm font-medium mt-1 block">{s}</span>
+            </li>
+          ))}
+        </ol>
 
         {step === 0 && (
-          <div className="panel p-6 space-y-4">
-            <h2 className="font-medium">Account ready</h2>
+          <div className="dossier paper-stack p-6 sm:p-8 space-y-4">
+            <p className="system-label">Identity verified</p>
+            <h2 className="text-xl font-medium">Account ready</h2>
             <p className="text-sm text-ink/70">
               Signed in as <span className="font-mono">{user?.email}</span>. Next you will add Gemini and Pinecone keys.
             </p>
@@ -98,15 +121,21 @@ export default function SettingsPage() {
         )}
 
         {step === 1 && (
-          <div className="panel p-6 space-y-4">
-            <h2 className="font-medium">Google Gemini</h2>
+          <div className="dossier paper-stack p-6 sm:p-8 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="system-label">Language + embedding engine</p>
+                <h2 className="text-xl font-medium mt-1">Google Gemini</h2>
+              </div>
+              <span className="stamp text-ok">Provider 01</span>
+            </div>
             <p className="text-sm text-ink/70">
               Free key:{" "}
               <a className="text-brand underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
                 aistudio.google.com/apikey
               </a>
             </p>
-            <p className="text-sm text-ink/70">
+            <p className="alert-info">
               Models used: chat <span className="font-mono">gemini-flash-latest</span>, embeddings{" "}
               <span className="font-mono">gemini-embedding-001</span> (1536 dims)
             </p>
@@ -124,7 +153,7 @@ export default function SettingsPage() {
                 placeholder="AIza…"
               />
             </div>
-            <button type="button" className="text-sm text-brand" onClick={() => setShowAdvanced(!showAdvanced)}>
+            <button type="button" className="archive-link text-left" onClick={() => setShowAdvanced(!showAdvanced)}>
               {showAdvanced ? "Hide" : "Show"} advanced: base URL override
             </button>
             {showAdvanced && (
@@ -145,12 +174,19 @@ export default function SettingsPage() {
             <button className="btn-primary" onClick={saveOpenAI} disabled={busy || !openaiKey}>
               Save and test connection
             </button>
-          </div>        )}
+          </div>
+        )}
 
         {step === 2 && (
-          <div className="panel p-6 space-y-4">
-            <h2 className="font-medium">Pinecone</h2>
-            <ul className="text-sm text-ink/70 list-disc pl-5 space-y-1">
+          <div className="dossier paper-stack p-6 sm:p-8 space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="system-label">Semantic index</p>
+                <h2 className="text-xl font-medium mt-1">Pinecone</h2>
+              </div>
+              <span className="stamp text-warn">Provider 02</span>
+            </div>
+            <ul className="alert-warning list-disc pl-8 space-y-1">
               <li>Create a serverless index in Pinecone</li>
               <li>Dimension: <span className="font-mono">1536</span></li>
               <li>Metric: <span className="font-mono">cosine</span></li>
@@ -174,18 +210,26 @@ export default function SettingsPage() {
         )}
 
         {step === 3 && (
-          <div className="panel p-6 space-y-4">
-            <h2 className="font-medium text-ok">You are set</h2>
-            <p className="text-sm text-ink/70">Your keys are saved and validated. You can start recording incidents.</p>
-            <div className="flex gap-3">
-              <Link href="/dashboard" className="btn-primary">Go to dashboard</Link>
-              <Link href="/incidents/new" className="btn-secondary">Add first incident</Link>
+          <div className="dossier paper-stack overflow-hidden">
+            <div className="bg-ok text-white p-6 sm:p-8">
+              <p className="font-mono text-4xl" aria-hidden>:)</p>
+              <p className="system-label-light mt-5">Connection sequence complete</p>
+              <h2 className="text-2xl font-medium mt-1">Your archive is online.</h2>
+            </div>
+            <div className="p-6 sm:p-8 space-y-4">
+              <p className="text-sm text-ink/70">Your keys are saved and validated. You can start recording incidents.</p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/dashboard" className="btn-primary">Go to dashboard</Link>
+                <Link href="/incidents/new" className="btn-secondary">Add first incident</Link>
+              </div>
             </div>
           </div>
         )}
 
-        {message && <p className="text-sm text-ok mt-4">{message}</p>}
-        {error && <p className="text-sm text-fail mt-4">{error}</p>}
+        <div aria-live="polite">
+          {message && <p className="alert-success mt-4">{message}</p>}
+          {error && <p role="alert" className="alert-error mt-4">{error}</p>}
+        </div>
       </main>
     </div>
   );

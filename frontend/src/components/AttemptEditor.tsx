@@ -22,21 +22,27 @@ export function AttemptEditor({
   }
 
   return (
-    <div className="space-y-3">
-      <div>
-        <p className="label">Attempt trace</p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <div>
+        <p className="system-label">Attempt trace</p>
         <p className="text-xs text-ink/60">
           Record each troubleshooting step, what happened, and whether it worked.
         </p>
+        </div>
+        <span className="font-mono text-[10px] text-ink/45">{attempts.length} STEP(S) LOGGED</span>
       </div>
 
       {attempts.map((attempt, index) => (
-        <div key={attempt.id || index} className="border border-panel p-4 space-y-3">
+        <div key={attempt.id || index} className="relative border border-brand/15 bg-ground/40 p-4 sm:p-5 space-y-3">
+          <span className={`absolute left-0 top-0 bottom-0 w-1 ${
+            attempt.outcome === "successful" ? "bg-ok" : attempt.outcome === "failed" ? "bg-fail" : "bg-warn"
+          }`} />
           <div className="flex items-center justify-between">
-            <p className="font-mono text-xs text-brand uppercase">Attempt {index + 1}</p>
+            <p className="font-mono text-xs text-brand uppercase">Trace_{String(index + 1).padStart(2, "0")}</p>
             <button
               type="button"
-              className="text-xs text-fail"
+              className="font-mono text-[10px] uppercase tracking-wide text-fail hover:underline"
               onClick={() => remove(index)}
             >
               Remove
@@ -83,7 +89,7 @@ export function AttemptEditor({
         className="btn-secondary"
         onClick={() => onChange([...attempts, { ...EMPTY_ATTEMPT }])}
       >
-        + Add attempt
+        + Append attempt
       </button>
     </div>
   );

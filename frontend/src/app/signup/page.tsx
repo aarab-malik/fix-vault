@@ -26,7 +26,7 @@ export default function SignupPage() {
 
   return (
     <AuthShell mode="signup">
-      <form onSubmit={submit} className="space-y-4 panel p-6">
+      <form onSubmit={submit} className="space-y-5">
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input
@@ -51,15 +51,15 @@ export default function SignupPage() {
             autoComplete="new-password"
             required
           />
-          <p className="text-xs text-ink/50 mt-1">At least 8 characters.</p>
+          <p className="font-mono text-[10px] text-ink/45 mt-1.5">MIN_LENGTH: 8 CHARACTERS</p>
         </div>
         {error && (
-          <p className="font-mono text-sm text-fail border border-fail/30 bg-white px-3 py-2">
+          <p role="alert" className="alert-error font-mono">
             {error}
           </p>
         )}
         <button type="submit" className="btn-primary w-full" disabled={busy}>
-          {busy ? "Creating account…" : "Create account"}
+          {busy ? "Building archive…" : "Initialize my archive →"}
         </button>
       </form>
     </AuthShell>

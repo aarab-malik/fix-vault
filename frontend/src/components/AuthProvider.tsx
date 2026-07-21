@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, User } from "@/lib/api";
+import { ApiError, api, User } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
 
 const publicPaths = ["/login", "/signup"];
@@ -9,19 +9,45 @@ const publicPaths = ["/login", "/signup"];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bootError, setBootError] = useState("");
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setBootError("");
+
     api
       .me()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // Only a real auth rejection means "logged out".
+        // 500 / network / cold-start must not bounce the user to login.
+        if (err instanceof ApiError && err.status === 401) {
+          setUser(null);
+          return;
+        }
+        setBootError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not reach FixVault API. The backend may be waking up."
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || bootError) return;
     const isPublic = publicPaths.includes(pathname);
     if (!user && !isPublic) {
       router.replace("/login");
@@ -34,12 +60,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && !user.credentials_configured && pathname !== "/settings") {
       router.replace("/settings");
     }
-  }, [user, loading, pathname, router]);
+  }, [user, loading, bootError, pathname, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Loading…</p>
+      <div className="min-h-screen grid lg:grid-cols-2">
+        <div className="bg-brand text-white p-8 sm:p-12 flex items-center">
+          <div>
+            <p className="font-mono text-5xl" aria-hidden>
+              :(
+            </p>
+            <p className="system-label-light mt-6">FixVault boot sequence</p>
+            <h1 className="text-2xl font-medium mt-2">Recovering your session.</h1>
+          </div>
+        </div>
+        <div className="flex items-center p-8">
+          <div className="panel p-6 w-full max-w-md mx-auto" aria-live="polite">
+            <p className="font-mono text-xs text-brand">AUTH_CHECK: IN_PROGRESS</p>
+            <div className="h-1 bg-panel mt-4 overflow-hidden">
+              <div className="h-full w-2/3 bg-brand" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (bootError && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="dossier paper-stack max-w-2xl w-full grid sm:grid-cols-[0.7fr_1.3fr] overflow-hidden">
+          <div className="bg-fail text-white p-7">
+            <p className="font-mono text-6xl" aria-hidden>:(</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-white/50 mt-8">
+              Boot interrupted
+            </p>
+            <p className="font-mono text-xs mt-2">0xAPI_OFFLINE</p>
+          </div>
+          <div className="p-7 sm:p-8">
+            <p className="system-label">API connection error</p>
+            <h1 className="text-2xl font-semibold tracking-tight mt-2">FixVault could not finish booting.</h1>
+            <p className="alert-error mt-5" role="alert">{bootError}</p>
+            <p className="page-copy mt-4">
+              Your data is safe. The free Render service may be waking up; wait briefly, then retry the handshake.
+            </p>
+            <button className="btn-primary mt-5" onClick={() => window.location.reload()}>
+              Retry handshake →
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
