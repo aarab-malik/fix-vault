@@ -57,7 +57,7 @@ export default function LoginPage() {
           </p>
         )}
         <button type="submit" className="btn-primary w-full" disabled={busy}>
-          {busy ? "Recovering session…" : "Open my archive →"}
+          {busy ? "Signing in…" : "Log in →"}
         </button>
       </form>
     </AuthShell>

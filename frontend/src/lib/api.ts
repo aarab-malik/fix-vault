@@ -41,8 +41,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     );
   }
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new ApiError(formatDetail(data.detail, res.statusText || "Request failed"), res.status);
+    const raw = await res.text();
+    let detail: unknown;
+    try {
+      detail = JSON.parse(raw).detail;
+    } catch {
+      detail = raw.trim() || null;
+    }
+    throw new ApiError(
+      formatDetail(detail, res.statusText || `Request failed (${res.status})`),
+      res.status
+    );
   }
   return res.json();
 }

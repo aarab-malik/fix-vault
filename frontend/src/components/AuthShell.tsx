@@ -86,21 +86,21 @@ export function AuthShell({
           <div className="dossier p-6 sm:p-8">
           <div className="flex items-center justify-between mb-7">
             <span className={mode === "login" ? "file-tab" : "file-tab-warn"}>
-              {mode === "login" ? "Existing archive" : "New archive"}
+              {mode === "login" ? "Log in" : "New archive"}
             </span>
             <span className="font-mono text-[9px] text-ink/35">
               FORM_{mode === "login" ? "AUTH_01" : "AUTH_02"}
             </span>
           </div>
           <p className="system-label mb-2">
-            {mode === "login" ? "Resume protected session" : "Register archive owner"}
+            {mode === "login" ? "Sign in" : "Create account"}
           </p>
           <h2 className="text-3xl font-semibold tracking-tight text-ink mb-2">
             {mode === "login" ? "Log in to FixVault" : "Sign up for FixVault"}
           </h2>
           <p className="text-sm leading-relaxed text-ink/60 mb-7">
             {mode === "login"
-              ? "Continue with the account that holds your incident archive."
+              ? "Enter your email and password to open your incident archive."
               : "Create an account, then connect Gemini and Pinecone in Settings."}
           </p>
 

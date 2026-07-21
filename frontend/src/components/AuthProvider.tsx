@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api, User } from "@/lib/api";
+import { api, User } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
 
 const publicPaths = ["/login", "/signup"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  // Only block the UI on the first session check — never again on route changes.
   const [ready, setReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -16,17 +15,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // One quiet session check. Any failure = treat as logged out and show login.
+    // Never trap the user on a "recovering session" wall.
     api
       .me()
       .then((u) => {
         if (!cancelled) setUser(u);
       })
-      .catch((err) => {
-        if (cancelled) return;
-        if (!(err instanceof ApiError && err.status === 401)) {
-          console.warn("[FixVault] /auth/me failed:", err);
-        }
-        setUser(null);
+      .catch(() => {
+        if (!cancelled) setUser(null);
       })
       .finally(() => {
         if (!cancelled) setReady(true);
@@ -53,15 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, ready, pathname, router]);
 
-  // Tiny first-paint placeholder — not the full BSOD boot screen on every click.
   if (!ready) {
-    return (
-      <div className="min-h-screen bg-ground flex items-center justify-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand/50">
-          Loading…
-        </p>
-      </div>
-    );
+    // Minimal first paint only — never a multi-second auth theatre.
+    return <div className="min-h-screen bg-ground" />;
   }
 
   return <>{children}</>;
