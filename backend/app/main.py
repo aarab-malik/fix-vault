@@ -78,3 +78,25 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/health/db")
+async def health_db():
+    """Temporary diagnostics: shows whether Postgres is reachable (password redacted)."""
+    import re
+
+    from sqlalchemy import text
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    safe_url = re.sub(r":([^:@/]+)@", ":***@", settings.database_url)
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"ok": True, "database_url": safe_url}
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"ok": False, "database_url": safe_url, "error": str(exc)[:800]},
+        )
