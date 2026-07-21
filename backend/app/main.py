@@ -12,10 +12,18 @@ from app.database import Base, engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        # Do not crash the whole serverless function on cold start if DB is briefly
+        # unreachable; /health can still respond and logs will show the real error.
+        print(f"[fixvault] database init failed: {exc}")
     yield
-    await engine.dispose()
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 app = FastAPI(title="FixVault API", version="1.0.0", lifespan=lifespan)
@@ -56,6 +64,15 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
 app.include_router(incidents.router, prefix="/api")
 app.include_router(ask.router, prefix="/api")
+
+
+@app.get("/")
+async def root():
+    return {
+        "service": "FixVault API",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 
 @app.get("/health")
