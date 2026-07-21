@@ -9,14 +9,12 @@ const publicPaths = ["/login", "/signup"];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [bootError, setBootError] = useState("");
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setBootError("");
 
     api
       .me()
@@ -25,17 +23,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((err) => {
         if (cancelled) return;
-        // Only a real auth rejection means "logged out".
-        // 500 / network / cold-start must not bounce the user to login.
-        if (err instanceof ApiError && err.status === 401) {
-          setUser(null);
-          return;
+        // Any auth-check failure = treat as logged out and show login.
+        // Login / dashboard will surface a clearer API error if the backend is down.
+        if (!(err instanceof ApiError && err.status === 401)) {
+          console.warn("[FixVault] /auth/me failed:", err);
         }
-        setBootError(
-          err instanceof ApiError
-            ? err.message
-            : "Could not reach FixVault API. The backend may be waking up."
-        );
+        setUser(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -47,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (loading || bootError) return;
+    if (loading) return;
     const isPublic = publicPaths.includes(pathname);
     if (!user && !isPublic) {
       router.replace("/login");
@@ -60,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && !user.credentials_configured && pathname !== "/settings") {
       router.replace("/settings");
     }
-  }, [user, loading, bootError, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   if (loading) {
     return (
@@ -80,33 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <div className="h-1 bg-panel mt-4 overflow-hidden">
               <div className="h-full w-2/3 bg-brand" />
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (bootError && !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="dossier paper-stack max-w-2xl w-full grid sm:grid-cols-[0.7fr_1.3fr] overflow-hidden">
-          <div className="bg-fail text-white p-7">
-            <p className="font-mono text-6xl" aria-hidden>:(</p>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-white/50 mt-8">
-              Boot interrupted
-            </p>
-            <p className="font-mono text-xs mt-2">0xAPI_OFFLINE</p>
-          </div>
-          <div className="p-7 sm:p-8">
-            <p className="system-label">API connection error</p>
-            <h1 className="text-2xl font-semibold tracking-tight mt-2">FixVault could not finish booting.</h1>
-            <p className="alert-error mt-5" role="alert">{bootError}</p>
-            <p className="page-copy mt-4">
-              Your data is safe. The free Render service may be waking up; wait briefly, then retry the handshake.
-            </p>
-            <button className="btn-primary mt-5" onClick={() => window.location.reload()}>
-              Retry handshake →
-            </button>
           </div>
         </div>
       </div>

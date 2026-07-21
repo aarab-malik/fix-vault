@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Nav from "@/components/Nav";
 import { IncidentCard } from "@/components/IncidentCard";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<{
     total: number;
     unresolved: number;
@@ -25,10 +27,14 @@ export default function DashboardPage() {
       .dashboard()
       .then(setData)
       .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          router.replace("/login");
+          return;
+        }
         setError(err instanceof Error ? err.message : "Failed to load dashboard");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -68,18 +74,24 @@ export default function DashboardPage() {
             <div className="bg-fail text-white p-7 sm:p-9">
               <p className="font-mono text-6xl leading-none" aria-hidden>:(</p>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55 mt-7">Archive read fault</p>
-              <p className="font-mono text-xs mt-2 text-white/80">CODE: API_CONNECTION_RESET</p>
+              <p className="font-mono text-xs mt-2 text-white/80">CODE: ARCHIVE_READ_FAILED</p>
             </div>
             <div className="p-7 sm:p-9">
               <p className="system-label">Recovery instruction</p>
               <h1 className="text-2xl font-semibold tracking-tight mt-2">The archive did not answer.</h1>
               <p className="page-copy mt-3">
-                Your incident data is untouched. The API may be waking up or the current request was interrupted.
+                Your API at fix-vault-d292 is up. This usually means the login cookie was not sent, or an incident
+                request failed. Log in again, then retry.
               </p>
               <p className="alert-error mt-5" role="alert">{error}</p>
-              <button className="btn-primary mt-5" onClick={() => window.location.reload()}>
-                Retry archive read →
-              </button>
+              <div className="flex flex-wrap gap-3 mt-5">
+                <button className="btn-primary" onClick={() => window.location.reload()}>
+                  Retry archive read →
+                </button>
+                <Link href="/login" className="btn-secondary">
+                  Go to login
+                </Link>
+              </div>
             </div>
           </div>
         </main>

@@ -36,7 +36,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     });
   } catch {
     throw new ApiError(
-      "Cannot reach the API. If you are on localhost, wait for Render to wake up or run the backend locally.",
+      "Cannot reach the FixVault API proxy. Check BACKEND_URL on the frontend host.",
       0
     );
   }
