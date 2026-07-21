@@ -50,8 +50,9 @@ export function AuthShell({
             Don’t debug the same ghost twice.
           </h1>
           <p className="mt-6 text-white/72 text-sm leading-6 max-w-lg">
-            FixVault keeps the ugly details: the exact failure, every dead end, and the one repair
-            that finally held.
+            FixVault is a personal bug journal. Save what broke, what you tried, and what finally
+            fixed it. Next time the same problem shows up, you can search your own history instead
+            of starting from zero.
           </p>
 
           <div className="mt-9 border border-white/20 bg-[#073867] shadow-[5px_5px_0_#062B50]">
@@ -101,7 +102,7 @@ export function AuthShell({
           <p className="text-sm leading-relaxed text-ink/60 mb-7">
             {mode === "login"
               ? "Enter your email and password to open your incident archive."
-              : "FixVault is a personal bug journal. Save what broke, what you tried, and what finally fixed it. Next time the same problem shows up, you can search your own history instead of starting from zero."}
+              : "Create an account, then connect Gemini and Pinecone in Settings."}
           </p>
 
           {children}
