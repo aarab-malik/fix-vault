@@ -7,7 +7,12 @@ from app.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(settings.database_url, echo=False)
+# Supabase pooler (port 6543) does not support asyncpg prepared statements.
+engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    connect_args={"statement_cache_size": 0},
+)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
