@@ -2,16 +2,24 @@
 
 import { useState } from "react";
 import Nav from "@/components/Nav";
+import { SetupRequired } from "@/components/SetupRequired";
+import { useAuth } from "@/components/AuthProvider";
 import { api, ApiError, Citation } from "@/lib/api";
 import Link from "next/link";
 
 export default function AskPage() {
+  const { user } = useAuth();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  if (user && !user.credentials_configured) {
+    return <SetupRequired feature="ask" />;
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,11 +30,20 @@ export default function AskPage() {
       setAnswer(res.answer);
       setCitations(res.citations);
       setWarnings(res.failed_fix_warnings);
+      setNeedsSetup(false);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 428) {
+        setNeedsSetup(true);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Ask failed");
     } finally {
       setBusy(false);
     }
+  }
+
+  if (needsSetup) {
+    return <SetupRequired feature="ask" />;
   }
 
   return (

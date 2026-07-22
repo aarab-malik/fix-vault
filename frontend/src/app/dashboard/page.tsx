@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import Nav from "@/components/Nav";
 import { IncidentCard } from "@/components/IncidentCard";
+import { SetupRequired } from "@/components/SetupRequired";
+import { useAuth } from "@/components/AuthProvider";
 import { ApiError, api } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [data, setData] = useState<{
     total: number;
     unresolved: number;
@@ -19,10 +22,18 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<{ status?: string; tag?: string }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
+    if (user && !user.credentials_configured) {
+      setNeedsSetup(true);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setNeedsSetup(false);
     api
       .dashboard()
       .then(setData)
@@ -31,10 +42,14 @@ export default function DashboardPage() {
           router.replace("/login");
           return;
         }
+        if (err instanceof ApiError && err.status === 428) {
+          setNeedsSetup(true);
+          return;
+        }
         setError(err instanceof Error ? err.message : "Failed to load dashboard");
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [router, user]);
 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +74,10 @@ export default function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Filter failed");
     }
+  }
+
+  if (needsSetup || (user && !user.credentials_configured)) {
+    return <SetupRequired feature="archive" />;
   }
 
   if (loading && !data) {

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Nav from "@/components/Nav";
 import { AttemptEditor } from "@/components/AttemptEditor";
 import { MobileSection } from "@/components/MobileSection";
+import { SetupRequired } from "@/components/SetupRequired";
+import { useAuth } from "@/components/AuthProvider";
 import { api, ApiError, IncidentDraft } from "@/lib/api";
 import Link from "next/link";
 
@@ -16,12 +18,18 @@ const emptyDraft = (): IncidentDraft => ({
 });
 
 export default function NewIncidentPage() {
+  const { user } = useAuth();
   const [notes, setNotes] = useState("");
   const [draft, setDraft] = useState<IncidentDraft | null>(null);
   const [similar, setSimilar] = useState<{ id: string; title: string; status: string; similarity: number; relevance: string }[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  if ((user && !user.credentials_configured) || needsSetup) {
+    return <SetupRequired feature="log" />;
+  }
 
   async function generateDraft() {
     setBusy(true);
@@ -34,6 +42,10 @@ export default function NewIncidentPage() {
       setDraft(d);
       setSimilar(sim.incidents);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 428) {
+        setNeedsSetup(true);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Failed to generate draft");
     } finally {
       setBusy(false);

@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import { AttemptEditor } from "@/components/AttemptEditor";
 import { MobileSection } from "@/components/MobileSection";
+import { SetupRequired } from "@/components/SetupRequired";
 import { TraceRail } from "@/components/TraceRail";
+import { useAuth } from "@/components/AuthProvider";
 import { api, ApiError, IncidentDetail } from "@/lib/api";
 import Link from "next/link";
 
@@ -14,24 +16,38 @@ const MAX_TAGS = 4;
 export default function IncidentDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const { user } = useAuth();
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
+    if (user && !user.credentials_configured) {
+      setNeedsSetup(true);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setNeedsSetup(false);
     api
       .getIncident(id)
       .then(setIncident)
       .catch((err) => {
+        if (err instanceof ApiError && err.status === 428) {
+          setNeedsSetup(true);
+          setIncident(null);
+          return;
+        }
         setIncident(null);
         setError(err instanceof ApiError ? err.message : "Failed to load incident");
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, user]);
 
   async function save() {
     if (!incident) return;
@@ -67,6 +83,10 @@ export default function IncidentDetailPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Delete failed");
     }
+  }
+
+  if (needsSetup || (user && !user.credentials_configured)) {
+    return <SetupRequired feature="incident" />;
   }
 
   if (loading) {

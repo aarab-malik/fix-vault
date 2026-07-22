@@ -1,16 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api, User } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
 
 const publicPaths = ["/login", "/signup"];
+
+type AuthContextValue = {
+  user: User | null;
+  ready: boolean;
+  refresh: () => Promise<User | null>;
+};
+
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  ready: false,
+  refresh: async () => null,
+});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  async function refresh() {
+    try {
+      const next = await api.me();
+      setUser(next);
+      return next;
+    } catch {
+      setUser(null);
+      return null;
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -36,14 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     const isPublic = publicPaths.includes(pathname);
 
-    // Login/signup are always reachable so a leftover cookie cannot
-    // silently "sign you in" without entering credentials again.
+    // Login/signup stay reachable so leftover cookies cannot silently skip auth.
+    // Missing provider keys must not force-redirect; feature pages show a setup gate instead.
     if (!user && !isPublic) {
       router.replace("/login");
-      return;
-    }
-    if (user && !user.credentials_configured && !isPublic && pathname !== "/settings") {
-      router.replace("/settings");
     }
   }, [user, ready, pathname, router]);
 
@@ -51,5 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-ground" />;
   }
 
-  return <>{children}</>;
+  return (
+    <AuthContext.Provider value={{ user, ready, refresh }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
