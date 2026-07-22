@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   description: "Personal bug-fix memory journal",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>

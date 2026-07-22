@@ -23,7 +23,6 @@ export default function SettingsPage() {
     api.me().then((u) => {
       setUser(u);
       const savedBase = u?.openai_base_url || "";
-      // Prefer Gemini default if empty or leftover OpenAI URL
       if (!savedBase || savedBase.includes("api.openai.com")) {
         setBaseUrl("");
       } else {
@@ -73,74 +72,75 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <Nav />
-      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <div className="flex items-center gap-4 mb-7">
+      <main id="main-content" className="page-main page-main-narrow page-stack">
+        <div className="page-header">
           <span className="file-tab">Secure connector bay</span>
-          <div className="diagnostic-ruler flex-1 opacity-60" />
-          <span className="hidden sm:block stamp text-ok">Encrypted</span>
+          <div className="page-header-rule" />
+          <span className="stamp text-ok">Encrypted</span>
         </div>
-        <header className="grid lg:grid-cols-[1fr_auto] gap-6 items-end mb-7">
-          <div>
-            <p className="system-label mb-2">Connection console</p>
-            <h1 className="page-title">Bring your own intelligence.</h1>
-            <p className="page-copy mt-2 max-w-xl">
-              Your Gemini and Pinecone credentials are encrypted for your account. FixVault never shares provider quota between users.
-            </p>
-          </div>
-          <div className="dossier bg-[#EAF4FF] px-5 py-4 font-mono text-[10px] leading-5 text-brand">
-            CREDENTIAL_MODE: BYOK<br />ENCRYPTION: ACTIVE
-          </div>
+
+        <header className="space-y-3">
+          <p className="system-label">Connection console</p>
+          <h1 className="page-title">Bring your own intelligence.</h1>
+          <p className="page-copy max-w-2xl">
+            Your Gemini and Pinecone credentials are encrypted for your account. FixVault never shares provider quota between users.
+          </p>
         </header>
 
-        <ol className="grid grid-cols-2 sm:grid-cols-4 border border-brand/25 bg-[#F8FBFE] mb-7 shadow-[5px_5px_0_rgba(7,56,103,0.12)]">
-          {STEPS.map((s, i) => (
-            <li
-              key={s}
-              aria-current={i === step ? "step" : undefined}
-              className={`p-3 sm:p-4 border-r border-b sm:border-b-0 border-brand/15 last:border-r-0 ${
-                i === step ? "bg-brand text-white" : i < step ? "bg-[#E8F5EF] text-ok" : "text-ink/40"
-              }`}
-            >
-              <span className="font-mono text-[10px] block opacity-60">STEP_{String(i + 1).padStart(2, "0")}</span>
-              <span className="text-sm font-medium mt-1 block">{s}</span>
-            </li>
-          ))}
-        </ol>
+        <div className="surface-pad">
+          <p className="system-label mb-2 sm:hidden">Current step</p>
+          <p className="font-medium sm:hidden mb-3">{STEPS[step]}</p>
+          <ol className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-0 sm:border sm:border-brand/20">
+            {STEPS.map((s, i) => (
+              <li
+                key={s}
+                aria-current={i === step ? "step" : undefined}
+                className={`p-3 sm:p-4 border border-brand/15 sm:border-0 sm:border-r last:sm:border-r-0 ${
+                  i === step ? "bg-brand text-white" : i < step ? "bg-[#E8F5EF] text-ok" : "text-ink/40 bg-[#F8FBFE]"
+                }`}
+              >
+                <span className="font-mono text-xs block opacity-70">Step {i + 1}</span>
+                <span className="text-sm font-medium mt-1 block">{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
         {step === 0 && (
-          <div className="dossier paper-stack p-6 sm:p-8 space-y-4">
+          <div className="surface-pad space-y-4">
             <p className="system-label">Identity verified</p>
             <h2 className="text-xl font-medium">Account ready</h2>
-            <p className="text-sm text-ink/70">
+            <p className="text-sm text-ink/70 break-words">
               Signed in as <span className="font-mono">{user?.email}</span>. Next you will add Gemini and Pinecone keys.
             </p>
-            <button className="btn-primary" onClick={() => setStep(1)}>Continue</button>
+            <button className="btn-primary w-full sm:w-auto" onClick={() => setStep(1)}>Continue</button>
           </div>
         )}
 
         {step === 1 && (
-          <div className="dossier paper-stack p-6 sm:p-8 space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="system-label">Language + embedding engine</p>
-                <h2 className="text-xl font-medium mt-1">Google Gemini</h2>
+          <div className="surface-pad space-y-5">
+            <div className="space-y-2">
+              <p className="system-label">Language + embedding engine</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <h2 className="text-xl font-medium">Google Gemini</h2>
+                <span className="stamp text-ok self-start">Provider 01</span>
               </div>
-              <span className="stamp text-ok">Provider 01</span>
             </div>
-            <p className="text-sm text-ink/70">
+            <p className="text-sm text-ink/70 break-words">
               Free key:{" "}
-              <a className="text-brand underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
+              <a className="text-brand underline break-all" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
                 aistudio.google.com/apikey
               </a>
             </p>
-            <p className="alert-info">
-              Models used: chat <span className="font-mono">gemini-flash-latest</span>, embeddings{" "}
-              <span className="font-mono">gemini-embedding-001</span> (1536 dims)
-            </p>
+            <div className="alert-info space-y-1">
+              <p>Models used:</p>
+              <p className="font-mono text-xs break-all">chat gemini-flash-latest</p>
+              <p className="font-mono text-xs break-all">embeddings gemini-embedding-001 (1536 dims)</p>
+            </div>
             {user?.openai_key_hint && (
-              <p className="text-sm font-mono text-ink/60">Current key: {user.openai_key_hint}</p>
+              <p className="text-sm font-mono text-ink/60 break-all">Current key: {user.openai_key_hint}</p>
             )}
             <div>
               <label className="label" htmlFor="openai">Gemini API key</label>
@@ -153,47 +153,56 @@ export default function SettingsPage() {
                 placeholder="AIza…"
               />
             </div>
-            <button type="button" className="archive-link text-left" onClick={() => setShowAdvanced(!showAdvanced)}>
-              {showAdvanced ? "Hide" : "Show"} advanced: base URL override
-            </button>
-            {showAdvanced && (
-              <div>
-                <label className="label" htmlFor="baseurl">Base URL</label>
-                <input
-                  id="baseurl"
-                  className="input font-mono"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="https://generativelanguage.googleapis.com/v1beta/openai/"
-                />
-                <p className="text-xs text-ink/60 mt-1">
-                  Leave empty for Gemini (default). Only change if you use a proxy.
-                </p>
-              </div>
-            )}
-            <button className="btn-primary" onClick={saveOpenAI} disabled={busy || !openaiKey}>
-              Save and test connection
-            </button>
+            <div className="space-y-3">
+              <button type="button" className="archive-link text-left" onClick={() => setShowAdvanced(!showAdvanced)}>
+                {showAdvanced ? "Hide" : "Show"} advanced: base URL override
+              </button>
+              {showAdvanced && (
+                <div>
+                  <label className="label" htmlFor="baseurl">Base URL</label>
+                  <input
+                    id="baseurl"
+                    className="input font-mono"
+                    value={baseUrl}
+                    onChange={(e) => setBaseUrl(e.target.value)}
+                    placeholder="Leave empty for Gemini default"
+                  />
+                  <p className="text-xs text-ink/60 mt-2">
+                    Only change if you use a proxy.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="action-row sm:justify-start">
+              <button className="btn-primary" onClick={saveOpenAI} disabled={busy || !openaiKey}>
+                Save and test connection
+              </button>
+            </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className="dossier paper-stack p-6 sm:p-8 space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="system-label">Semantic index</p>
-                <h2 className="text-xl font-medium mt-1">Pinecone</h2>
+          <div className="surface-pad space-y-5">
+            <div className="space-y-2">
+              <p className="system-label">Semantic index</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <h2 className="text-xl font-medium">Pinecone</h2>
+                <span className="stamp text-warn self-start">Provider 02</span>
               </div>
-              <span className="stamp text-warn">Provider 02</span>
             </div>
-            <ul className="alert-warning list-disc pl-8 space-y-1">
-              <li>Create a serverless index in Pinecone</li>
-              <li>Dimension: <span className="font-mono">1536</span></li>
-              <li>Metric: <span className="font-mono">cosine</span></li>
-              <li>Copy the index host from the Pinecone console</li>
-            </ul>
+            <details className="alert-warning">
+              <summary className="cursor-pointer list-none font-medium [&::-webkit-details-marker]:hidden">
+                Setup checklist
+              </summary>
+              <ul className="list-disc pl-5 mt-3 space-y-1">
+                <li>Create a serverless index in Pinecone</li>
+                <li>Dimension: <span className="font-mono">1536</span></li>
+                <li>Metric: <span className="font-mono">cosine</span></li>
+                <li>Copy the index host from the Pinecone console</li>
+              </ul>
+            </details>
             {user?.pinecone_key_hint && (
-              <p className="text-sm font-mono text-ink/60">Current key: {user.pinecone_key_hint}</p>
+              <p className="text-sm font-mono text-ink/60 break-all">Current key: {user.pinecone_key_hint}</p>
             )}
             <div>
               <label className="label" htmlFor="pinecone">API key</label>
@@ -201,24 +210,31 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="label" htmlFor="host">Index host</label>
-              <input id="host" className="input font-mono" value={pineconeHost} onChange={(e) => setPineconeHost(e.target.value)} placeholder="your-index-xxxx.svc....pinecone.io" />
+              <input
+                id="host"
+                className="input font-mono"
+                value={pineconeHost}
+                onChange={(e) => setPineconeHost(e.target.value)}
+                placeholder="your-index-xxxx.svc....pinecone.io"
+              />
             </div>
-            <button className="btn-primary" onClick={savePinecone} disabled={busy || !pineconeKey || !pineconeHost}>
-              Save and test connection
-            </button>
+            <div className="action-row sm:justify-start">
+              <button className="btn-primary" onClick={savePinecone} disabled={busy || !pineconeKey || !pineconeHost}>
+                Save and test connection
+              </button>
+            </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="dossier paper-stack overflow-hidden">
-            <div className="bg-ok text-white p-6 sm:p-8">
-              <p className="font-mono text-4xl" aria-hidden>:)</p>
-              <p className="system-label-light mt-5">Connection sequence complete</p>
+          <div className="surface overflow-hidden">
+            <div className="bg-ok text-white p-5 sm:p-6">
+              <p className="system-label-light">Connection sequence complete</p>
               <h2 className="text-2xl font-medium mt-1">Your archive is online.</h2>
             </div>
-            <div className="p-6 sm:p-8 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <p className="text-sm text-ink/70">Your keys are saved and validated. You can start recording incidents.</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="action-row">
                 <Link href="/dashboard" className="btn-primary">Go to dashboard</Link>
                 <Link href="/incidents/new" className="btn-secondary">Add first incident</Link>
               </div>
@@ -226,9 +242,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <div aria-live="polite">
-          {message && <p className="alert-success mt-4">{message}</p>}
-          {error && <p role="alert" className="alert-error mt-4">{error}</p>}
+        <div aria-live="polite" className="space-y-3">
+          {message && <p className="alert-success break-words">{message}</p>}
+          {error && <p role="alert" className="alert-error break-words">{error}</p>}
         </div>
       </main>
     </div>

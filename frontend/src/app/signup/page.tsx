@@ -58,10 +58,10 @@ export default function SignupPage() {
             autoComplete="new-password"
             required
           />
-          <p className="font-mono text-[10px] text-ink/45 mt-1.5">MIN_LENGTH: 8 CHARACTERS</p>
+          <p className="font-mono text-xs text-ink/45 mt-1.5">Minimum 8 characters</p>
         </div>
         {error && (
-          <p role="alert" className="alert-error font-mono">
+          <p role="alert" className="alert-error font-mono break-words">
             {error}
           </p>
         )}

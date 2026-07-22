@@ -30,43 +30,35 @@ export default function AskPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <Nav />
-      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
-        <div className="flex items-center gap-4">
+      <main id="main-content" className="page-main page-main-narrow page-stack">
+        <div className="page-header">
           <span className="file-tab-warn">Memory interrogation</span>
-          <div className="diagnostic-ruler flex-1 opacity-60" />
-          <span className="hidden sm:block stamp text-brand">Grounded mode</span>
+          <div className="page-header-rule" />
+          <span className="stamp text-brand">Grounded mode</span>
         </div>
-        <section className="dossier paper-stack grid lg:grid-cols-[0.8fr_1.5fr] overflow-hidden">
-          <div className="relative bg-brand text-white p-6 sm:p-8 flex flex-col justify-between overflow-hidden">
-            <span className="pointer-events-none absolute -right-3 top-4 font-mono text-[10rem] text-white/[0.04]" aria-hidden>?</span>
-            <div>
-              <p className="system-label-light">Memory query / semantic scan</p>
-              <p className="font-mono text-5xl mt-7" aria-hidden>?</p>
-              <h1 className="text-2xl font-medium mt-4">Ask what your archive remembers.</h1>
-              <p className="text-sm leading-relaxed text-white/70 mt-3">
-                FixVault compares prior incidents, recovered fixes, and failed attempts before it answers.
-              </p>
-            </div>
-            <p className="font-mono text-[10px] text-white/40 mt-10">
-              RESPONSE_MODE: GROUNDED_ONLY
+
+        <section className="surface overflow-hidden">
+          <div className="bg-brand text-white p-5 sm:p-6">
+            <p className="system-label-light">Memory query</p>
+            <h1 className="text-xl sm:text-2xl font-medium mt-2">Ask what your archive remembers.</h1>
+            <p className="text-sm leading-relaxed text-white/70 mt-2">
+              FixVault compares prior incidents, recovered fixes, and failed attempts before it answers.
             </p>
           </div>
 
-          <form onSubmit={submit} className="relative p-6 sm:p-8 flex flex-col bg-[#F8FBFE]">
-            <div className="absolute right-5 top-4 font-mono text-[9px] text-brand/30">QUERY_FORM / 0x02</div>
+          <form onSubmit={submit} className="p-5 sm:p-6 space-y-4">
             <label className="label" htmlFor="memory-question">Question for your archive</label>
             <textarea
               id="memory-question"
-              className="input min-h-40 resize-y"
+              className="input min-h-36 resize-y"
               placeholder="What finally fixed the SSH timeout on my Azure VM?"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               required
             />
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
-              <p className="font-mono text-[10px] text-ink/45">CITATIONS + FAILED-FIX CHECK ENABLED</p>
+            <div className="action-row sm:justify-end">
               <button type="submit" className="btn-primary" disabled={busy}>
                 {busy ? "Scanning memory…" : "Run memory query →"}
               </button>
@@ -77,48 +69,49 @@ export default function AskPage() {
         {error && <p role="alert" className="alert-error">{error}</p>}
 
         {answer && (
-          <section className="dossier overflow-hidden">
-            <div className="bg-[#EAF4FF] border-b border-brand/15 px-5 py-3 flex items-center justify-between">
+          <section className="surface overflow-hidden">
+            <div className="bg-[#EAF4FF] border-b border-brand/15 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="system-label">Recovered answer</h2>
-              <span className="font-mono text-[10px] text-brand/55">{citations.length} SOURCE(S)</span>
+              <span className="font-mono text-xs text-brand/55">{citations.length} source(s)</span>
             </div>
-            <div className="p-5 sm:p-7 space-y-6">
-              <div className="grid sm:grid-cols-[5rem_1fr] gap-4">
-                <div className="hidden sm:block border-r border-brand/15 font-mono text-[9px] leading-5 text-brand/35">
-                  0001<br />0010<br />0011<br />0100<br />0101<br />0110
-                </div>
-                <p className="text-[15px] leading-7 whitespace-pre-wrap">{answer}</p>
-              </div>
+            <div className="p-5 sm:p-6 space-y-5">
+              <p className="text-[15px] leading-7 whitespace-pre-wrap break-words">{answer}</p>
 
               {warnings.length > 0 && (
-                <div className="alert-warning">
-                  <p className="font-mono text-[11px] text-warn uppercase tracking-wide mb-2">Known dead end</p>
-                  {warnings.map((w, i) => (
-                    <p key={i}>{w}</p>
-                  ))}
-                </div>
+                <details className="alert-warning" open={warnings.length <= 2}>
+                  <summary className="font-mono text-xs text-warn uppercase tracking-wide cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    Known dead ends ({warnings.length})
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {warnings.map((w, i) => (
+                      <p key={i} className="break-words">{w}</p>
+                    ))}
+                  </div>
+                </details>
               )}
 
               {citations.length > 0 && (
-                <div className="section-rule">
-                  <h3 className="system-label mb-3">Evidence register</h3>
-                  <div className="grid md:grid-cols-2 gap-3">
+                <details className="section-rule" open={citations.length <= 2}>
+                  <summary className="system-label cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    Evidence register ({citations.length})
+                  </summary>
+                  <div className="grid md:grid-cols-2 gap-3 mt-4">
                     {citations.map((c, i) => (
                       <Link
                         key={i}
                         href={`/incidents/${c.incident_id}`}
                         className="border border-brand/15 bg-ground/50 p-4 text-sm hover:border-brand group"
                       >
-                        <span className="font-mono text-[10px] text-brand">REF_{String(i + 1).padStart(2, "0")}</span>
-                        <p className="font-medium mt-2 group-hover:text-brand">{c.title}</p>
-                        <p className="font-mono text-[10px] text-ink/50 mt-1">
+                        <span className="font-mono text-xs text-brand">Ref {i + 1}</span>
+                        <p className="font-medium mt-2 group-hover:text-brand break-words">{c.title}</p>
+                        <p className="font-mono text-xs text-ink/50 mt-1">
                           {c.match_score}% match · {c.section}
                         </p>
-                        <p className="text-ink/65 mt-3 leading-relaxed">{c.excerpt}</p>
+                        <p className="text-ink/65 mt-3 leading-relaxed break-words line-clamp-4">{c.excerpt}</p>
                       </Link>
                     ))}
                   </div>
-                </div>
+                </details>
               )}
             </div>
           </section>

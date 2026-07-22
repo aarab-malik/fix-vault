@@ -47,13 +47,27 @@ export default function DashboardPage() {
     }
   }
 
+  async function applyFilter(next: { status?: string; tag?: string }) {
+    setFilter(next);
+    setError("");
+    try {
+      const res = await api.listIncidents({
+        ...next,
+        search: search || undefined,
+      });
+      setData((d) => (d ? { ...d, recent: res.items } : null));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Filter failed");
+    }
+  }
+
   if (loading && !data) {
     return (
-      <div className="min-h-screen">
+      <div className="page-shell">
         <Nav />
-        <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          <div className="panel p-6" aria-live="polite">
-            <p className="system-label">Boot sequence / archive</p>
+        <main id="main-content" className="page-main">
+          <div className="surface-pad" aria-live="polite">
+            <p className="system-label">Archive</p>
             <p className="font-mono text-sm text-ink/60 mt-3">Loading incident memory…</p>
           </div>
         </main>
@@ -63,28 +77,24 @@ export default function DashboardPage() {
 
   if (error && !data) {
     return (
-      <div className="min-h-screen">
+      <div className="page-shell">
         <Nav />
-        <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          <div className="flex items-center gap-4 mb-7">
+        <main id="main-content" className="page-main page-stack">
+          <div className="page-header">
             <span className="file-tab-warn">Interrupted read</span>
-            <div className="diagnostic-ruler flex-1 opacity-60" />
           </div>
-          <div className="dossier paper-stack grid lg:grid-cols-[0.72fr_1.28fr] overflow-hidden">
-            <div className="bg-fail text-white p-7 sm:p-9">
-              <p className="font-mono text-6xl leading-none" aria-hidden>:(</p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55 mt-7">Archive read fault</p>
-              <p className="font-mono text-xs mt-2 text-white/80">CODE: ARCHIVE_READ_FAILED</p>
+          <section className="surface overflow-hidden">
+            <div className="bg-fail text-white p-5 sm:p-6">
+              <p className="system-label-light">Archive read fault</p>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mt-2">The archive did not answer.</h1>
             </div>
-            <div className="p-7 sm:p-9">
-              <p className="system-label">Recovery instruction</p>
-              <h1 className="text-2xl font-semibold tracking-tight mt-2">The archive did not answer.</h1>
-              <p className="page-copy mt-3">
-                Your API at fix-vault-d292 is up. This usually means the login cookie was not sent, or an incident
+            <div className="p-5 sm:p-6 space-y-4">
+              <p className="page-copy">
+                Your API is up. This usually means the login cookie was not sent, or an incident
                 request failed. Log in again, then retry.
               </p>
-              <p className="alert-error mt-5" role="alert">{error}</p>
-              <div className="flex flex-wrap gap-3 mt-5">
+              <p className="alert-error" role="alert">{error}</p>
+              <div className="action-row">
                 <button className="btn-primary" onClick={() => window.location.reload()}>
                   Retry archive read →
                 </button>
@@ -93,7 +103,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-          </div>
+          </section>
         </main>
       </div>
     );
@@ -102,172 +112,137 @@ export default function DashboardPage() {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen">
+    <div className="page-shell">
       <Nav />
-      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-7">
-        <div className="flex items-center gap-4">
-          <span className="file-tab">Archive index / A–Z</span>
-          <div className="diagnostic-ruler flex-1 opacity-60" />
-          <span className="hidden sm:block font-mono text-[9px] text-brand/45">
-            VAULT_BLOCK: {String(data.total).padStart(4, "0")}
+      <main id="main-content" className="page-main page-stack">
+        <div className="page-header">
+          <span className="file-tab">Archive index</span>
+          <div className="page-header-rule" />
+          <span className="font-mono text-xs text-brand/45">
+            {data.total} records
           </span>
         </div>
+
         {error && (
           <p className="alert-error" role="alert">
             {error}
           </p>
         )}
-        <section className="dossier paper-stack grid lg:grid-cols-[1.55fr_0.75fr]">
-          <div className="p-6 sm:p-8">
-            <p className="system-label mb-3">System memory / overview</p>
-            <h1 className="page-title max-w-2xl">Your recovery history is ready.</h1>
-            <p className="page-copy mt-3 max-w-xl">
-              Search what broke, inspect failed paths, and reuse the fix that held.
-            </p>
-            <form onSubmit={runSearch} className="mt-7 flex flex-col sm:flex-row gap-2">
-              <label htmlFor="archive-search" className="sr-only">Search incident archive</label>
-              <input
-                id="archive-search"
-                className="input flex-1"
-                placeholder="Describe the symptom, error, or environment…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button type="submit" className="btn-primary">
-                Scan archive →
-              </button>
-            </form>
-          </div>
-          <div className="relative bg-brand text-white p-6 sm:p-8 flex flex-col justify-between min-h-56 overflow-hidden">
-            <span className="pointer-events-none absolute -right-4 -top-8 font-mono text-[9rem] text-white/[0.045]" aria-hidden>
-              FV
-            </span>
+
+        <section className="surface overflow-hidden">
+          <div className="p-5 sm:p-6 lg:grid lg:grid-cols-[1.4fr_0.8fr] lg:gap-6">
             <div>
-              <p className="system-label-light">Archive health</p>
-              <p className="font-mono text-5xl mt-5">{data.total}</p>
-              <p className="text-sm text-white/65 mt-1">incidents retained</p>
+              <p className="system-label mb-2">Overview</p>
+              <h1 className="page-title">Your recovery history is ready.</h1>
+              <p className="page-copy mt-3">
+                Search what broke, inspect failed paths, and reuse the fix that held.
+              </p>
+              <form onSubmit={runSearch} className="mt-6 space-y-3">
+                <label htmlFor="archive-search" className="sr-only">Search incident archive</label>
+                <input
+                  id="archive-search"
+                  className="input"
+                  placeholder="Describe the symptom, error, or environment…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <button type="submit" className="btn-primary w-full sm:w-auto">
+                  Scan archive →
+                </button>
+              </form>
             </div>
-            <div className="border-t border-white/20 pt-4 flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-wide text-white/55">Open loops</span>
-              <span className="status-badge border-warn/50 text-[#FFD784]">{data.unresolved} unresolved</span>
+            <div className="mt-5 lg:mt-0 bg-brand text-white p-5 sm:p-6 flex flex-col justify-between gap-4">
+              <div>
+                <p className="system-label-light">Archive health</p>
+                <p className="font-mono text-4xl mt-3">{data.total}</p>
+                <p className="text-sm text-white/65 mt-1">incidents retained</p>
+              </div>
+              <div className="border-t border-white/20 pt-4 flex items-center justify-between gap-3">
+                <span className="font-mono text-xs uppercase tracking-wide text-white/55">Open loops</span>
+                <span className="status-badge border-warn/50 text-[#FFD784]">{data.unresolved} unresolved</span>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="grid sm:grid-cols-3 gap-3">
+        <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="metric-tile">
             <p className="system-label">Recovered</p>
-            <p className="font-mono text-3xl text-ok mt-3">{Math.max(data.total - data.unresolved, 0)}</p>
-            <p className="text-xs text-ink/50 mt-1">closed incident loops</p>
+            <p className="font-mono text-2xl sm:text-3xl text-ok mt-2">{Math.max(data.total - data.unresolved, 0)}</p>
           </div>
-          <div className="metric-tile !bg-[#FFF4DC]">
-            <p className="system-label !text-warn">Still open</p>
-            <p className="font-mono text-3xl text-warn mt-3">{data.unresolved}</p>
-            <p className="text-xs text-ink/50 mt-1">awaiting a durable fix</p>
+          <div className="metric-tile bg-[#FFF4DC]">
+            <p className="system-label text-warn">Still open</p>
+            <p className="font-mono text-2xl sm:text-3xl text-warn mt-2">{data.unresolved}</p>
           </div>
-          <div className="metric-tile !bg-[#EAF4FF]">
+          <div className="metric-tile bg-[#EAF4FF] col-span-2 sm:col-span-1">
             <p className="system-label">Recurring signals</p>
-            <p className="font-mono text-3xl text-brand mt-3">{data.recurring_tags.length}</p>
-            <p className="text-xs text-ink/50 mt-1">tag patterns detected</p>
+            <p className="font-mono text-2xl sm:text-3xl text-brand mt-2">{data.recurring_tags.length}</p>
           </div>
         </section>
 
-        <section className="dossier p-4 sm:p-5" aria-label="Incident filters">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4">
-              <p className="system-label">Filter channels</p>
-              <p className="hidden sm:block font-mono text-[10px] text-ink/45">SELECT ONE SIGNAL</p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-sm">
-              <FilterButton
-                label="All records"
-                active={!filter.status && !filter.tag}
-                onClick={async () => {
-                  setFilter({});
-                  setError("");
-                  try {
-                    const res = await api.listIncidents({ search: search || undefined });
-                    setData((d) => (d ? { ...d, recent: res.items } : null));
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Filter failed");
-                  }
-                }}
-              />
-              <FilterButton
-                label="Unresolved"
-                active={filter.status === "unresolved"}
-                onClick={async () => {
-                  setFilter({ status: "unresolved" });
-                  setError("");
-                  try {
-                    const res = await api.listIncidents({
-                      status: "unresolved",
-                      search: search || undefined,
-                    });
-                    setData((d) => (d ? { ...d, recent: res.items } : null));
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Filter failed");
-                  }
-                }}
-              />
-              <FilterButton
-                label="Resolved"
-                active={filter.status === "resolved"}
-                onClick={async () => {
-                  setFilter({ status: "resolved" });
-                  setError("");
-                  try {
-                    const res = await api.listIncidents({
-                      status: "resolved",
-                      search: search || undefined,
-                    });
-                    setData((d) => (d ? { ...d, recent: res.items } : null));
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Filter failed");
-                  }
-                }}
-              />
-              {data.recurring_tags.slice(0, 6).map((t) => (
+        <section className="surface-pad" aria-label="Incident filters">
+          <details className="mobile-section-details">
+            <summary>
+              <span>
+                <span className="block font-medium">Filters</span>
+                <span className="mt-0.5 block text-xs font-normal text-ink/55 sm:hidden">Status and tags</span>
+              </span>
+              <span className="font-mono text-xs text-brand sm:hidden" aria-hidden>▼</span>
+            </summary>
+            <div className="mobile-section-panel sm:border-0 sm:bg-transparent sm:p-0 space-y-4">
+              <div className="action-row">
                 <FilterButton
-                  key={t.tag}
-                  label={`${t.tag} · ${t.count}`}
-                  active={filter.tag === t.tag}
-                  onClick={async () => {
-                    setFilter({ tag: t.tag });
-                    setError("");
-                    try {
-                      const res = await api.listIncidents({
-                        tag: t.tag,
-                        search: search || undefined,
-                      });
-                      setData((d) => (d ? { ...d, recent: res.items } : null));
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : "Filter failed");
-                    }
-                  }}
+                  label="All records"
+                  active={!filter.status && !filter.tag}
+                  onClick={() => applyFilter({})}
                 />
-              ))}
+                <FilterButton
+                  label="Unresolved"
+                  active={filter.status === "unresolved"}
+                  onClick={() => applyFilter({ status: "unresolved" })}
+                />
+                <FilterButton
+                  label="Resolved"
+                  active={filter.status === "resolved"}
+                  onClick={() => applyFilter({ status: "resolved" })}
+                />
+              </div>
+              {data.recurring_tags.length > 0 && (
+                <div>
+                  <p className="system-label mb-3">Tags</p>
+                  <div className="action-row">
+                    {data.recurring_tags.slice(0, 6).map((t) => (
+                      <FilterButton
+                        key={t.tag}
+                        label={`${t.tag} · ${t.count}`}
+                        active={filter.tag === t.tag}
+                        onClick={() => applyFilter({ tag: t.tag })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </details>
         </section>
 
         <section>
-          <div className="flex items-end justify-between gap-4 mb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
             <div>
               <p className="system-label mb-1">Incident stream</p>
-              <h2 className="text-2xl font-semibold tracking-tight">Recent records</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Recent records</h2>
             </div>
-            <Link href="/incidents/new" className="btn-secondary">
+            <Link href="/incidents/new" className="btn-secondary w-full sm:w-auto shrink-0">
               + Log incident
             </Link>
           </div>
           <div className="space-y-3">
             {data.recent.length === 0 ? (
-              <div className="panel p-8 sm:p-12 text-center">
+              <div className="surface-pad text-center">
                 <p className="font-mono text-4xl text-brand" aria-hidden>:)</p>
                 <h3 className="font-medium mt-3">No matching incidents</h3>
                 <p className="page-copy mt-1">The archive is quiet. Record the next failure while the details are fresh.</p>
-                <Link href="/incidents/new" className="btn-primary mt-5">Add your first incident</Link>
+                <Link href="/incidents/new" className="btn-primary mt-5 w-full sm:w-auto inline-flex">Add your first incident</Link>
               </div>
             ) : (
               data.recent.map((i) => <IncidentCard key={i.id} incident={i} />)

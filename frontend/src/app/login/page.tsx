@@ -69,7 +69,7 @@ export default function LoginPage() {
           />
         </div>
         {error && (
-          <p role="alert" className="alert-error font-mono">
+          <p role="alert" className="alert-error font-mono break-words">
             {error}
           </p>
         )}
