@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -165,15 +165,29 @@ async def delete_incident(db: AsyncSession, user_id: str, incident_id: str) -> b
 
 
 async def get_dashboard_stats(db: AsyncSession, user_id: str) -> dict:
-    total = (await db.execute(
-        select(func.count()).select_from(Incident).where(Incident.user_id == user_id)
-    )).scalar() or 0
-    unresolved = (await db.execute(
-        select(func.count()).select_from(Incident).where(
-            Incident.user_id == user_id, Incident.status == "unresolved"
+    # One round-trip for both totals instead of two count queries.
+    totals = (
+        await db.execute(
+            select(
+                func.count(Incident.id).label("total"),
+                func.coalesce(
+                    func.sum(case((Incident.status == "unresolved", 1), else_=0)),
+                    0,
+                ).label("unresolved"),
+            ).where(Incident.user_id == user_id)
         )
-    )).scalar() or 0
-    recent = await list_incidents(db, user_id, limit=5)
+    ).one()
+
+    # Skip list_incidents() here: it runs an extra count we do not need.
+    recent_result = await db.execute(
+        select(Incident)
+        .where(Incident.user_id == user_id)
+        .options(selectinload(Incident.tags))
+        .order_by(Incident.updated_at.desc())
+        .limit(8)
+    )
+    recent = list(recent_result.scalars().unique().all())
+
     tag_result = await db.execute(
         select(Tag.name, func.count(IncidentTag.incident_id))
         .join(IncidentTag, IncidentTag.tag_id == Tag.id)
@@ -185,8 +199,8 @@ async def get_dashboard_stats(db: AsyncSession, user_id: str) -> dict:
     )
     recurring = [{"tag": row[0], "count": row[1]} for row in tag_result.all()]
     return {
-        "total": total,
-        "unresolved": unresolved,
-        "recent": recent[0],
+        "total": int(totals.total or 0),
+        "unresolved": int(totals.unresolved or 0),
+        "recent": recent,
         "recurring_tags": recurring,
     }

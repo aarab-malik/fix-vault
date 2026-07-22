@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { AuthShell } from "@/components/AuthShell";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,8 +26,10 @@ export default function SignupPage() {
         await api.logout().catch(() => undefined);
         throw new ApiError("Signup could not be verified. Try again.", 400);
       }
-      window.location.href = "/settings";
+      setUser(user);
+      router.replace("/settings");
     } catch (err) {
+      setUser(null);
       await api.logout().catch(() => undefined);
       setError(err instanceof ApiError ? err.message : "Signup failed");
     } finally {

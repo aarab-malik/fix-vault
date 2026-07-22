@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { AuthShell } from "@/components/AuthShell";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -16,7 +20,6 @@ export default function LoginPage() {
     setBusy(true);
     const normalizedEmail = email.trim().toLowerCase();
     try {
-      // Drop any previous session before attempting a new login.
       await api.logout().catch(() => undefined);
 
       const user = await api.login(normalizedEmail, password);
@@ -25,15 +28,10 @@ export default function LoginPage() {
         throw new ApiError("Invalid email or password", 401);
       }
 
-      // Confirm the cookie actually authenticates this account.
-      const me = await api.me();
-      if (!me?.id || me.email.trim().toLowerCase() !== normalizedEmail) {
-        await api.logout().catch(() => undefined);
-        throw new ApiError("Login could not be verified. Try again.", 401);
-      }
-
-      window.location.href = me.credentials_configured ? "/dashboard" : "/settings";
+      setUser(user);
+      router.replace(user.credentials_configured ? "/dashboard" : "/settings");
     } catch (err) {
+      setUser(null);
       await api.logout().catch(() => undefined);
       setError(err instanceof ApiError ? err.message : "Login failed");
     } finally {

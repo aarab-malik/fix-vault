@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, User } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -10,12 +10,14 @@ type AuthContextValue = {
   user: User | null;
   ready: boolean;
   refresh: () => Promise<User | null>;
+  setUser: (user: User | null) => void;
 };
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   ready: false,
   refresh: async () => null,
+  setUser: () => undefined,
 });
 
 export function useAuth() {
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const next = await api.me();
       setUser(next);
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return null;
     }
-  }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,19 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     const isPublic = publicPaths.includes(pathname);
 
-    // Login/signup stay reachable so leftover cookies cannot silently skip auth.
-    // Missing provider keys must not force-redirect; feature pages show a setup gate instead.
     if (!user && !isPublic) {
       router.replace("/login");
     }
   }, [user, ready, pathname, router]);
 
-  if (!ready) {
-    return <div className="min-h-screen bg-ground" />;
-  }
-
   return (
-    <AuthContext.Provider value={{ user, ready, refresh }}>
+    <AuthContext.Provider value={{ user, ready, refresh, setUser }}>
       {children}
     </AuthContext.Provider>
   );

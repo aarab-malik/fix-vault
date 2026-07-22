@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Nav from "@/components/Nav";
 import { IncidentCard } from "@/components/IncidentCard";
 import { SetupRequired } from "@/components/SetupRequired";
@@ -9,35 +9,58 @@ import { ApiError, api } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+type DashboardData = {
+  total: number;
+  unresolved: number;
+  recent: Awaited<ReturnType<typeof api.dashboard>>["recent"];
+  recurring_tags: { tag: string; count: number }[];
+};
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const [data, setData] = useState<{
-    total: number;
-    unresolved: number;
-    recent: Awaited<ReturnType<typeof api.dashboard>>["recent"];
-    recurring_tags: { tag: string; count: number }[];
-  } | null>(null);
+  const { user, ready } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<{ status?: string; tag?: string }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const fetchedForUser = useRef<string | null>(null);
 
   useEffect(() => {
-    if (user && !user.credentials_configured) {
+    if (!ready) return;
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    if (!user.credentials_configured) {
       setNeedsSetup(true);
       setLoading(false);
       return;
     }
 
+    // Avoid refetching when AuthProvider only refreshes the same account object.
+    if (fetchedForUser.current === user.id) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     setLoading(true);
     setError("");
     setNeedsSetup(false);
+
     api
       .dashboard()
-      .then(setData)
+      .then((res) => {
+        if (cancelled) return;
+        fetchedForUser.current = user.id;
+        setData(res);
+      })
       .catch((err) => {
+        if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
           router.replace("/login");
           return;
@@ -48,8 +71,14 @@ export default function DashboardPage() {
         }
         setError(err instanceof Error ? err.message : "Failed to load dashboard");
       })
-      .finally(() => setLoading(false));
-  }, [router, user]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, user, router]);
 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -76,22 +105,30 @@ export default function DashboardPage() {
     }
   }
 
-  if (needsSetup || (user && !user.credentials_configured)) {
-    return <SetupRequired feature="archive" />;
-  }
-
-  if (loading && !data) {
+  if (!ready || (loading && !data && !needsSetup)) {
     return (
       <div className="page-shell">
         <Nav />
-        <main id="main-content" className="page-main">
+        <main id="main-content" className="page-main page-stack">
+          <div className="page-header">
+            <span className="file-tab">Archive index</span>
+          </div>
           <div className="surface-pad" aria-live="polite">
             <p className="system-label">Archive</p>
             <p className="font-mono text-sm text-ink/60 mt-3">Loading incident memory…</p>
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="metric-tile h-24 animate-pulse bg-brand/5" />
+            <div className="metric-tile h-24 animate-pulse bg-brand/5" />
+            <div className="metric-tile h-24 animate-pulse bg-brand/5 col-span-2 sm:col-span-1" />
+          </div>
         </main>
       </div>
     );
+  }
+
+  if (needsSetup || (user && !user.credentials_configured)) {
+    return <SetupRequired feature="archive" />;
   }
 
   if (error && !data) {
@@ -114,7 +151,22 @@ export default function DashboardPage() {
               </p>
               <p className="alert-error" role="alert">{error}</p>
               <div className="action-row">
-                <button className="btn-primary" onClick={() => window.location.reload()}>
+                <button
+                  className="btn-primary"
+                  onClick={() => {
+                    fetchedForUser.current = null;
+                    setLoading(true);
+                    setError("");
+                    api
+                      .dashboard()
+                      .then((res) => {
+                        if (user) fetchedForUser.current = user.id;
+                        setData(res);
+                      })
+                      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load dashboard"))
+                      .finally(() => setLoading(false));
+                  }}
+                >
                   Retry archive read →
                 </button>
                 <Link href="/login" className="btn-secondary">
