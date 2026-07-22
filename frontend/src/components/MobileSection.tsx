@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export function MobileSection({
   title,
   subtitle,
@@ -11,9 +13,36 @@ export function MobileSection({
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 640px)");
+    function sync(e?: MediaQueryList | MediaQueryListEvent) {
+      const matches = "matches" in (e || media) ? (e || media).matches : media.matches;
+      // Desktop: always expanded. Mobile: keep the chosen default.
+      if (matches) setOpen(true);
+      else setOpen(defaultOpen);
+    }
+    sync(media);
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, [defaultOpen]);
+
   return (
     <section className="border border-brand/15 bg-[#F8FBFE] sm:border-0 sm:bg-transparent">
-      <details className="mobile-section-details" open={defaultOpen}>
+      <details
+        className="mobile-section-details"
+        open={open}
+        onToggle={(e) => {
+          const next = e.currentTarget.open;
+          if (window.matchMedia("(min-width: 640px)").matches) {
+            e.currentTarget.open = true;
+            setOpen(true);
+            return;
+          }
+          setOpen(next);
+        }}
+      >
         <summary>
           <span>
             <span className="block">{title}</span>

@@ -251,50 +251,43 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="surface-pad" aria-label="Incident filters">
-          <details className="mobile-section-details">
-            <summary>
-              <span>
-                <span className="block font-medium">Filters</span>
-                <span className="mt-0.5 block text-xs font-normal text-ink/55 sm:hidden">Status and tags</span>
-              </span>
-              <span className="font-mono text-xs text-brand sm:hidden" aria-hidden>▼</span>
-            </summary>
-            <div className="mobile-section-panel sm:border-0 sm:bg-transparent sm:p-0 space-y-4">
+        <section className="surface-pad space-y-4" aria-label="Incident filters">
+          <div>
+            <p className="system-label mb-1">Filters</p>
+            <p className="text-xs text-ink/55">Narrow by status or recurring tags</p>
+          </div>
+          <div className="action-row">
+            <FilterButton
+              label="All records"
+              active={!filter.status && !filter.tag}
+              onClick={() => applyFilter({})}
+            />
+            <FilterButton
+              label="Unresolved"
+              active={filter.status === "unresolved"}
+              onClick={() => applyFilter({ status: "unresolved" })}
+            />
+            <FilterButton
+              label="Resolved"
+              active={filter.status === "resolved"}
+              onClick={() => applyFilter({ status: "resolved" })}
+            />
+          </div>
+          {data.recurring_tags.length > 0 && (
+            <div>
+              <p className="system-label mb-3">Tags</p>
               <div className="action-row">
-                <FilterButton
-                  label="All records"
-                  active={!filter.status && !filter.tag}
-                  onClick={() => applyFilter({})}
-                />
-                <FilterButton
-                  label="Unresolved"
-                  active={filter.status === "unresolved"}
-                  onClick={() => applyFilter({ status: "unresolved" })}
-                />
-                <FilterButton
-                  label="Resolved"
-                  active={filter.status === "resolved"}
-                  onClick={() => applyFilter({ status: "resolved" })}
-                />
+                {data.recurring_tags.slice(0, 6).map((t) => (
+                  <FilterButton
+                    key={t.tag}
+                    label={`${t.tag} · ${t.count}`}
+                    active={filter.tag === t.tag}
+                    onClick={() => applyFilter({ tag: t.tag })}
+                  />
+                ))}
               </div>
-              {data.recurring_tags.length > 0 && (
-                <div>
-                  <p className="system-label mb-3">Tags</p>
-                  <div className="action-row">
-                    {data.recurring_tags.slice(0, 6).map((t) => (
-                      <FilterButton
-                        key={t.tag}
-                        label={`${t.tag} · ${t.count}`}
-                        active={filter.tag === t.tag}
-                        onClick={() => applyFilter({ tag: t.tag })}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-          </details>
+          )}
         </section>
 
         <section>

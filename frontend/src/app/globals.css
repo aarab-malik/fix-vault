@@ -196,7 +196,7 @@ body {
   }
 
   .mobile-section-panel {
-    @apply px-4 pb-4 sm:px-5 sm:pb-5 sm:pt-0 sm:border sm:border-brand/15 sm:bg-[#F8FBFE];
+    @apply px-4 pb-4 sm:px-0 sm:pb-0;
   }
 
   @media (min-width: 640px) {
@@ -204,8 +204,8 @@ body {
       display: none;
     }
 
-    .mobile-section-details:not([open]) .mobile-section-panel {
-      display: block;
+    .mobile-section-details > .mobile-section-panel {
+      @apply border border-brand/15 bg-[#F8FBFE] p-5;
     }
   }
 }
