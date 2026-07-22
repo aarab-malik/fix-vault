@@ -14,10 +14,27 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setBusy(true);
+    const normalizedEmail = email.trim().toLowerCase();
     try {
-      const user = await api.login(email, password);
-      window.location.href = user.credentials_configured ? "/dashboard" : "/settings";
+      // Drop any previous session before attempting a new login.
+      await api.logout().catch(() => undefined);
+
+      const user = await api.login(normalizedEmail, password);
+      if (!user?.id || user.email.trim().toLowerCase() !== normalizedEmail) {
+        await api.logout().catch(() => undefined);
+        throw new ApiError("Invalid email or password", 401);
+      }
+
+      // Confirm the cookie actually authenticates this account.
+      const me = await api.me();
+      if (!me?.id || me.email.trim().toLowerCase() !== normalizedEmail) {
+        await api.logout().catch(() => undefined);
+        throw new ApiError("Login could not be verified. Try again.", 401);
+      }
+
+      window.location.href = me.credentials_configured ? "/dashboard" : "/settings";
     } catch (err) {
+      await api.logout().catch(() => undefined);
       setError(err instanceof ApiError ? err.message : "Login failed");
     } finally {
       setBusy(false);

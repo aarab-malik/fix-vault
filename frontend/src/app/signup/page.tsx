@@ -14,10 +14,17 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     setBusy(true);
+    const normalizedEmail = email.trim().toLowerCase();
     try {
-      await api.signup(email, password);
+      await api.logout().catch(() => undefined);
+      const user = await api.signup(normalizedEmail, password);
+      if (!user?.id || user.email.trim().toLowerCase() !== normalizedEmail) {
+        await api.logout().catch(() => undefined);
+        throw new ApiError("Signup could not be verified. Try again.", 400);
+      }
       window.location.href = "/settings";
     } catch (err) {
+      await api.logout().catch(() => undefined);
       setError(err instanceof ApiError ? err.message : "Signup failed");
     } finally {
       setBusy(false);

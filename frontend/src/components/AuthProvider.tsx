@@ -15,8 +15,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    // One quiet session check. Any failure = treat as logged out and show login.
-    // Never trap the user on a "recovering session" wall.
     api
       .me()
       .then((u) => {
@@ -37,21 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     const isPublic = publicPaths.includes(pathname);
+
+    // Login/signup are always reachable so a leftover cookie cannot
+    // silently "sign you in" without entering credentials again.
     if (!user && !isPublic) {
       router.replace("/login");
       return;
     }
-    if (user && isPublic) {
-      router.replace(user.credentials_configured ? "/dashboard" : "/settings");
-      return;
-    }
-    if (user && !user.credentials_configured && pathname !== "/settings") {
+    if (user && !user.credentials_configured && !isPublic && pathname !== "/settings") {
       router.replace("/settings");
     }
   }, [user, ready, pathname, router]);
 
   if (!ready) {
-    // Minimal first paint only — never a multi-second auth theatre.
     return <div className="min-h-screen bg-ground" />;
   }
 

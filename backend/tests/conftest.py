@@ -8,9 +8,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("CREDENTIALS_ENCRYPTION_KEY", "test-encryption-key-for-pytest-only")
+# httpx ASGI client uses http:// — Secure cookies would never be stored.
+os.environ["COOKIE_SECURE"] = "false"
 
+from app.config import get_settings
 from app.database import Base, get_db
 from app.main import app
+
+get_settings.cache_clear()
 
 
 @pytest.fixture

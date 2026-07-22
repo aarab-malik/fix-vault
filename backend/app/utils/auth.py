@@ -7,13 +7,31 @@ from app.config import get_settings
 
 password_hash = PasswordHash.recommended()
 
+# Used only to keep login timing similar when the email does not exist.
+_DUMMY_PASSWORD_HASH = password_hash.hash("fixvault-timing-dummy-not-a-real-password")
+
 
 def hash_password(password: str) -> str:
     return password_hash.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return password_hash.verify(plain, hashed)
+    try:
+        return bool(password_hash.verify(plain, hashed))
+    except Exception:
+        return False
+
+
+def verify_password_or_dummy(plain: str, hashed: str | None) -> bool:
+    """Verify password; if hash missing, still burn comparable work."""
+    if hashed:
+        return verify_password(plain, hashed)
+    verify_password(plain, _DUMMY_PASSWORD_HASH)
+    return False
+
+
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
 
 
 def create_access_token(subject: str) -> str:
