@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import APIStatusError, RateLimitError
 
+from app.db_migrate import run_migrations
 from app.api import ask, auth, incidents, settings
 from app.config import get_settings
 from app.database import Base, engine
@@ -15,6 +16,7 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        await run_migrations(engine)
     except Exception as exc:
         # Do not crash the whole serverless function on cold start if DB is briefly
         # unreachable; /health can still respond and logs will show the real error.

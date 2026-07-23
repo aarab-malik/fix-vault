@@ -25,8 +25,7 @@ export default function IncidentDetailPage() {
   const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
-    if (user && !user.credentials_configured) {
-      setNeedsSetup(true);
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -85,7 +84,7 @@ export default function IncidentDetailPage() {
     }
   }
 
-  if (needsSetup || (user && !user.credentials_configured)) {
+  if (needsSetup) {
     return <SetupRequired feature="incident" />;
   }
 

@@ -25,7 +25,7 @@ export function AuthShell({
           <p className="text-sm leading-relaxed text-ink/60 mb-6">
             {mode === "login"
               ? "Enter your email and password to open your incident archive."
-              : "Create an account, then connect Gemini and Pinecone in Settings."}
+              : "Create an account, then connect your AI providers and Pinecone in Connections."}
           </p>
 
           {children}

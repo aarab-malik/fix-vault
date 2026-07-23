@@ -1,3 +1,5 @@
+import type { ProviderPreset, User } from "./types";
+
 const API_BASE = "/api";
 
 export class ApiError extends Error {
@@ -56,19 +58,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
-export type User = {
-  id: string;
-  email: string;
-  credentials_configured: boolean;
-  openai_configured: boolean;
-  pinecone_configured: boolean;
-  openai_validated_at?: string;
-  pinecone_validated_at?: string;
-  openai_key_hint?: string;
-  pinecone_key_hint?: string;
-  openai_base_url?: string;
-  pinecone_index_host?: string;
-};
+export type { ProviderPreset, User };
 
 export type Attempt = {
   id?: string;
@@ -124,6 +114,23 @@ export const api = {
     request<User>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => request<{ ok: boolean }>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
+  getProviderPresets: () =>
+    request<{ chat: ProviderPreset[]; embedding: ProviderPreset[] }>("/settings/presets"),
+  saveChatProvider: (payload: {
+    provider: string;
+    api_key: string;
+    base_url?: string;
+    model?: string;
+  }) =>
+    request<User>("/settings/chat", { method: "POST", body: JSON.stringify(payload) }),
+  saveEmbeddingProvider: (payload: {
+    provider: string;
+    api_key: string;
+    base_url?: string;
+    model?: string;
+    dimensions?: number;
+  }) =>
+    request<User>("/settings/embedding", { method: "POST", body: JSON.stringify(payload) }),
   saveOpenAI: (openai_api_key: string, openai_base_url?: string) =>
     request<User>("/settings/openai", {
       method: "POST",
@@ -134,9 +141,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ pinecone_api_key, pinecone_index_host }),
     }),
+  testChat: () => request<{ ok: boolean; message: string }>("/settings/test/chat", { method: "POST" }),
+  testEmbedding: () =>
+    request<{ ok: boolean; message: string }>("/settings/test/embedding", { method: "POST" }),
   testOpenAI: () => request<{ ok: boolean; message: string }>("/settings/test/openai", { method: "POST" }),
   testPinecone: () => request<{ ok: boolean; message: string }>("/settings/test/pinecone", { method: "POST" }),
   clearCredentials: () => request<User>("/settings", { method: "DELETE" }),
+  reindexAll: () => request<{ ok: boolean; reindexed: number }>("/incidents/reindex-all", { method: "POST" }),
   dashboard: () =>
     request<{
       total: number;

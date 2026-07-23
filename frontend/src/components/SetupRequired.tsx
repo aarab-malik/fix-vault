@@ -1,29 +1,30 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 
-const COPY: Record<
-  string,
-  { title: string; body: string; code: string }
-> = {
+const COPY: Record<string, { title: string; body: string; code: string; needs: string[] }> = {
   archive: {
-    title: "No archive is online yet.",
-    body: "Finish connecting Gemini and Pinecone before you can view incidents, search history, or open the archive index.",
+    title: "Your archive is not fully connected yet.",
+    body: "FixVault needs a chat provider, an embedding provider, and Pinecone before semantic search and incident indexing can work.",
     code: "ARCHIVE_OFFLINE",
+    needs: ["Chat provider for drafting incidents", "Embedding provider for semantic search", "Pinecone index for vector storage"],
   },
   ask: {
     title: "Memory query is locked.",
-    body: "Ask Memory needs your Gemini and Pinecone keys so answers can be grounded in your own incident history.",
+    body: "Ask Memory needs both a chat provider and embeddings plus Pinecone so answers can be grounded in your incident history.",
     code: "QUERY_LOCKED",
+    needs: ["Chat provider", "Embedding provider", "Pinecone index"],
   },
   log: {
-    title: "Incident intake is locked.",
-    body: "You can open this page, but logging a new incident requires Gemini and Pinecone to structure and store the record.",
+    title: "Incident intake needs a chat provider.",
+    body: "Connect a chat provider to structure rough notes. You will also need embeddings and Pinecone before saving incidents to semantic memory.",
     code: "INTAKE_LOCKED",
+    needs: ["Chat provider to structure notes", "Embedding provider + Pinecone to save to memory"],
   },
   incident: {
-    title: "Incident dossier is locked.",
-    body: "Open Connections and finish provider setup before reading or editing incident records.",
+    title: "Semantic memory is not connected.",
+    body: "Open Connections and finish your embedding provider and Pinecone setup before indexing or searching incidents.",
     code: "DOSSIER_LOCKED",
+    needs: ["Embedding provider", "Pinecone index"],
   },
 };
 
@@ -47,7 +48,7 @@ export function SetupRequired({
         <section className="surface overflow-hidden" role="status" aria-live="polite">
           <div className="bg-warn text-ink p-5 sm:p-6 border-b border-warn/40">
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink/70">
-              System notice · credentials missing
+              System notice · providers missing
             </p>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mt-2">{copy.title}</h1>
           </div>
@@ -56,12 +57,12 @@ export function SetupRequired({
             <p className="page-copy max-w-2xl">{copy.body}</p>
 
             <div className="alert-warning space-y-2">
-              <p className="font-mono text-xs uppercase tracking-wide text-warn">Required before use</p>
-              <ol className="list-decimal pl-5 space-y-1 text-sm text-ink/80">
-                <li>Open Connections</li>
-                <li>Add and test your Gemini key</li>
-                <li>Add and test your Pinecone key</li>
-              </ol>
+              <p className="font-mono text-xs uppercase tracking-wide text-warn">Still needed</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-ink/80">
+                {copy.needs.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
 
             <div className="action-row">
@@ -72,10 +73,6 @@ export function SetupRequired({
                 Back to Archive
               </Link>
             </div>
-
-            <p className="font-mono text-xs text-ink/45">
-              STATUS: PROVIDERS_NOT_CONFIGURED · ARCHIVE_EMPTY_UNTIL_CONNECTED
-            </p>
           </div>
         </section>
       </main>

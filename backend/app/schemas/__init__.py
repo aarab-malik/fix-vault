@@ -19,8 +19,25 @@ class UserResponse(BaseModel):
     id: str
     email: str
     credentials_configured: bool
-    openai_configured: bool
+    semantic_configured: bool
+    chat_configured: bool
+    chat_validated: bool
+    embedding_configured: bool
+    embedding_validated: bool
     pinecone_configured: bool
+    pinecone_validated: bool
+    chat_provider: Optional[str] = None
+    chat_model: Optional[str] = None
+    chat_base_url: Optional[str] = None
+    chat_key_hint: Optional[str] = None
+    embedding_provider: Optional[str] = None
+    embedding_model: Optional[str] = None
+    embedding_dimensions: Optional[int] = None
+    embedding_base_url: Optional[str] = None
+    embedding_key_hint: Optional[str] = None
+    embedding_profile_fingerprint: Optional[str] = None
+    # Legacy aliases
+    openai_configured: bool
     openai_validated_at: Optional[datetime] = None
     pinecone_validated_at: Optional[datetime] = None
     openai_key_hint: Optional[str] = None
@@ -30,6 +47,21 @@ class UserResponse(BaseModel):
 
 
 # Settings
+class ChatProviderSettingsRequest(BaseModel):
+    provider: str = Field(min_length=2, max_length=32)
+    api_key: str = Field(min_length=10)
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+
+
+class EmbeddingProviderSettingsRequest(BaseModel):
+    provider: str = Field(min_length=2, max_length=32)
+    api_key: str = Field(min_length=10)
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+    dimensions: Optional[int] = Field(default=None, ge=64, le=4096)
+
+
 class OpenAISettingsRequest(BaseModel):
     openai_api_key: str = Field(min_length=10)
     openai_base_url: Optional[str] = None

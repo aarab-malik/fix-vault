@@ -27,9 +27,11 @@ export default function NewIncidentPage() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
 
-  if ((user && !user.credentials_configured) || needsSetup) {
+  if ((user && !user.chat_configured) || needsSetup) {
     return <SetupRequired feature="log" />;
   }
+
+  const canSaveToMemory = Boolean(user?.semantic_configured);
 
   async function generateDraft() {
     setBusy(true);
@@ -54,12 +56,20 @@ export default function NewIncidentPage() {
 
   async function save() {
     if (!draft) return;
+    if (!canSaveToMemory) {
+      setError("Connect an embedding provider and Pinecone in Connections before saving to semantic memory.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const incident = await api.createIncident({ ...draft, original_notes: notes });
       setSavedId(incident.id);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 428) {
+        setNeedsSetup(true);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Failed to save");
     } finally {
       setBusy(false);
@@ -204,10 +214,15 @@ export default function NewIncidentPage() {
             </MobileSection>
 
             <div className="action-row section-rule">
+              {!canSaveToMemory && (
+                <p className="alert-warning w-full">
+                  Drafting works with chat only. Connect embeddings and Pinecone in Connections to save incidents to memory.
+                </p>
+              )}
               <button
                 className="btn-primary"
                 onClick={save}
-                disabled={busy || draft.attempts.some((attempt) => !attempt.action.trim())}
+                disabled={busy || !canSaveToMemory || draft.attempts.some((attempt) => !attempt.action.trim())}
               >
                 Save incident
               </button>

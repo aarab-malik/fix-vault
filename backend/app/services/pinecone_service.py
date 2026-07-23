@@ -1,8 +1,6 @@
-from app.config import get_settings
 from app.models import Incident
-from app.services.credentials import UserCredentials, get_pinecone_index
+from app.services.credentials import UserCredentials, get_embedding_client, get_pinecone_index
 from app.services.openai_service import create_embedding
-from app.services.credentials import get_openai_client
 
 
 SECTIONS = ("summary", "root_cause", "attempt", "final_fix")
@@ -30,30 +28,37 @@ def vector_id(incident_id: str, section: str, attempt_idx: int = 0) -> str:
     return f"{incident_id}:{section}"
 
 
-def index_incident(creds: UserCredentials, user_id: str, incident: Incident) -> None:
-    client = get_openai_client(creds)
-    index = get_pinecone_index(creds)
-    settings = get_settings()
+def _base_metadata(creds: UserCredentials, user_id: str, incident: Incident) -> dict:
     tags = [t.name for t in incident.tags]
+    return {
+        "user_id": user_id,
+        "incident_id": incident.id,
+        "title": incident.title,
+        "status": incident.status,
+        "tags": tags,
+        "embedding_profile": creds.embedding.fingerprint,
+    }
+
+
+def index_incident(creds: UserCredentials, user_id: str, incident: Incident) -> None:
+    client = get_embedding_client(creds.embedding)
+    index = get_pinecone_index(creds)
     vectors = []
 
     for section in ("summary", "root_cause", "final_fix"):
         text = _section_text(incident, section)
         if not text:
             continue
-        embedding = create_embedding(client, text)
+        embedding = create_embedding(client, creds.embedding, text)
+        meta = {
+            **_base_metadata(creds, user_id, incident),
+            "section": section,
+            "excerpt": text[:500],
+        }
         vectors.append({
             "id": vector_id(incident.id, section),
             "values": embedding,
-            "metadata": {
-                "user_id": user_id,
-                "incident_id": incident.id,
-                "section": section,
-                "title": incident.title,
-                "status": incident.status,
-                "tags": tags,
-                "excerpt": text[:500],
-            },
+            "metadata": meta,
         })
 
     for i, _ in enumerate(incident.attempts):
@@ -61,20 +66,17 @@ def index_incident(creds: UserCredentials, user_id: str, incident: Incident) -> 
         if not text:
             continue
         a = incident.attempts[i]
-        embedding = create_embedding(client, text)
+        embedding = create_embedding(client, creds.embedding, text)
+        meta = {
+            **_base_metadata(creds, user_id, incident),
+            "section": "attempt",
+            "excerpt": text[:500],
+            "outcome": a.outcome,
+        }
         vectors.append({
             "id": vector_id(incident.id, "attempt", i),
             "values": embedding,
-            "metadata": {
-                "user_id": user_id,
-                "incident_id": incident.id,
-                "section": "attempt",
-                "title": incident.title,
-                "status": incident.status,
-                "tags": tags,
-                "excerpt": text[:500],
-                "outcome": a.outcome,
-            },
+            "metadata": meta,
         })
 
     if vectors:
@@ -100,9 +102,9 @@ def search_similar(
     status_filter: str | None = None,
     tag_filter: str | None = None,
 ) -> list[dict]:
-    client = get_openai_client(creds)
+    client = get_embedding_client(creds.embedding)
     index = get_pinecone_index(creds)
-    embedding = create_embedding(client, query)
+    embedding = create_embedding(client, creds.embedding, query)
 
     pinecone_filter: dict = {"user_id": {"$eq": user_id}}
     if status_filter:

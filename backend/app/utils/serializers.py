@@ -8,9 +8,8 @@ def build_user_response(user: User) -> UserResponse:
     return UserResponse(
         id=user.id,
         email=user.email,
-        openai_validated_at=user.openai_validated_at,
+        openai_validated_at=user.embedding_validated_at or user.openai_validated_at,
         pinecone_validated_at=user.pinecone_validated_at,
-        openai_base_url=user.openai_base_url,
         pinecone_index_host=user.pinecone_index_host,
         **status_data,
     )

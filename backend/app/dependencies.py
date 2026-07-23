@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
+from app.services.credentials import user_to_status
 from app.utils.auth import decode_access_token
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
@@ -31,16 +32,33 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def user_has_credentials(user: User) -> bool:
-    return bool(
-        user.openai_api_key_enc
-        and user.pinecone_api_key_enc
-        and user.pinecone_index_host
-    )
+def _status(user: User) -> dict:
+    return user_to_status(user)
+
+
+async def require_chat(user: CurrentUser) -> User:
+    status_data = _status(user)
+    if not status_data["chat_configured"]:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="chat_provider_required",
+        )
+    return user
+
+
+async def require_semantic(user: CurrentUser) -> User:
+    status_data = _status(user)
+    if not status_data["semantic_configured"]:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="semantic_provider_required",
+        )
+    return user
 
 
 async def require_credentials(user: CurrentUser) -> User:
-    if not user_has_credentials(user):
+    status_data = _status(user)
+    if not status_data["credentials_configured"]:
         raise HTTPException(
             status_code=status.HTTP_428_PRECONDITION_REQUIRED,
             detail="credentials_required",
@@ -48,4 +66,6 @@ async def require_credentials(user: CurrentUser) -> User:
     return user
 
 
+ChatUser = Annotated[User, Depends(require_chat)]
+SemanticUser = Annotated[User, Depends(require_semantic)]
 CredentialsUser = Annotated[User, Depends(require_credentials)]

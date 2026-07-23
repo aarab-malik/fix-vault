@@ -28,12 +28,30 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    # Encrypted credentials
+    # Legacy encrypted credentials (kept for backward compatibility)
     openai_api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     openai_base_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    openai_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Chat provider (OpenAI-compatible)
+    chat_provider: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    chat_api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    chat_base_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    chat_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    chat_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Embedding provider (OpenAI-compatible)
+    embedding_provider: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    embedding_api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    embedding_base_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    embedding_model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    embedding_dimensions: Mapped[Optional[int]] = mapped_column(nullable=True)
+    embedding_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    embedding_profile_fingerprint: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+
+    # Vector store
     pinecone_api_key_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     pinecone_index_host: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    openai_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     pinecone_validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     incidents: Mapped[list["Incident"]] = relationship(back_populates="user", cascade="all, delete-orphan")

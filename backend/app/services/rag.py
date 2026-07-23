@@ -1,6 +1,6 @@
 from app.models import User
 from app.schemas import AskResponse, Citation, RelatedIncident
-from app.services.credentials import get_openai_client, get_user_credentials
+from app.services.credentials import get_chat_client, get_user_credentials
 from app.services.openai_service import generate_grounded_answer
 from app.services.pinecone_service import search_similar
 
@@ -30,7 +30,7 @@ def build_failed_fix_warnings(matches: list[dict], question: str) -> list[str]:
 
 async def ask_question(user: User, question: str) -> AskResponse:
     creds = get_user_credentials(user)
-    client = get_openai_client(creds)
+    chat_client = get_chat_client(creds.chat)
     matches = search_similar(creds, user.id, question, top_k=8)
 
     seen_incidents: set[str] = set()
@@ -55,7 +55,7 @@ async def ask_question(user: User, question: str) -> AskResponse:
             excerpt=m.get("excerpt", "")[:300],
         ))
 
-    answer = generate_grounded_answer(client, question, context_blocks)
+    answer = generate_grounded_answer(chat_client, creds.chat, question, context_blocks)
     warnings = build_failed_fix_warnings(matches, question)
 
     return AskResponse(answer=answer, citations=citations, failed_fix_warnings=warnings)

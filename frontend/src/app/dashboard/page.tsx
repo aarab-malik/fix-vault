@@ -35,13 +35,7 @@ export default function DashboardPage() {
       return;
     }
 
-    if (!user.credentials_configured) {
-      setNeedsSetup(true);
-      setLoading(false);
-      return;
-    }
-
-    // Avoid refetching when AuthProvider only refreshes the same account object.
+    // Archive listing uses Postgres only; no AI credentials required.
     if (fetchedForUser.current === user.id) {
       setLoading(false);
       return;
@@ -127,7 +121,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (needsSetup || (user && !user.credentials_configured)) {
+  if (needsSetup) {
     return <SetupRequired feature="archive" />;
   }
 
